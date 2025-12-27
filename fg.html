@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Resume Builder</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Load html2pdf library for true PDF download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* Custom styles for professional resume look */
+        .resume-section-title {
+            @apply text-xl font-bold border-b-2 border-indigo-500 pb-1 mt-4 mb-2 uppercase tracking-wider;
+        }
+
+        /* Ensure the resume content is isolated for PDF generation */
+        #resume-preview-container {
+            /* Keep background white for PDF */
+            background-color: white;
+            padding: 2rem;
+            min-height: 800px;
+        }
+
+        /* Styling to hide inputs/buttons when printing (useful fallback) */
+        @media print {
+            body> :not(#resume-preview-container) {
+                display: none !important;
+            }
+
+            #resume-preview-container {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                min-height: 100vh;
+                box-shadow: none;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+
+    <h1 class="text-4xl font-extrabold text-gray-800 text-center mb-8">
+        Simple Resume Maker
+    </h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Input Form (Left/Top) -->
+        <div class="lg:col-span-1 p-6 bg-white rounded-xl shadow-lg no-print">
+            <h2 class="text-2xl font-bold text-indigo-600 mb-4 border-b pb-2">Your Details</h2>
+
+            <form id="resume-form" oninput="updateResume()">
+
+                <!-- Personal Details & Photo -->
+                <fieldset class="space-y-3 mb-6 p-4 border rounded-lg">
+                    <legend class="text-lg font-semibold text-gray-700">1. Contact Information & Photo</legend>
+
+                    <!-- New Photo Input -->
+                    <label for="photo-upload" class="block text-sm font-medium text-gray-700 pt-2">Upload Profile Photo
+                        (Optional)</label>
+                    <input type="file" id="photo-upload" accept="image/*"
+                        class="w-full p-2 border rounded-md focus:border-indigo-500 focus:ring-indigo-500"
+                        onchange="handlePhotoUpload(event)">
+
+                    <input type="text" id="name" placeholder="Full Name"
+                        class="w-full p-2 border rounded-md focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="text" id="title" placeholder="Professional Title (e.g., Software Engineer)"
+                        class="w-full p-2 border rounded-md focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="email" id="email" placeholder="Email Address"
+                        class="w-full p-2 border rounded-md focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="tel" id="phone" placeholder="Phone Number"
+                        class="w-full p-2 border rounded-md focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="text" id="linkedin" placeholder="LinkedIn Profile URL"
+                        class="w-full p-2 border rounded-md focus:border-indigo-500 focus:ring-indigo-500">
+                </fieldset>
+
+                <!-- Summary -->
+                <fieldset class="space-y-3 mb-6 p-4 border rounded-lg">
+                    <legend class="text-lg font-semibold text-gray-700">2. Professional Summary</legend>
+                    <textarea id="summary"
+                        placeholder="A concise, 3-4 line summary of your career goals and key achievements." rows="4"
+                        class="w-full p-2 border rounded-md focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                </fieldset>
+
+                <!-- Experience -->
+                <fieldset class="space-y-3 mb-6 p-4 border rounded-lg">
+                    <legend class="text-lg font-semibold text-gray-700 flex justify-between items-center">
+                        3. Experience
+                        <button type="button" onclick="addExperienceField()"
+                            class="text-sm text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded-full shadow-md transition duration-200">+
+                            Add Job</button>
+                    </legend>
+                    <div id="experience-fields" class="space-y-4">
+                        <!-- Initial fields are added by JS -->
+                    </div>
+                </fieldset>
+
+                <!-- Education -->
+                <fieldset class="space-y-3 mb-6 p-4 border rounded-lg">
+                    <legend class="text-lg font-semibold text-gray-700 flex justify-between items-center">
+                        4. Education
+                        <button type="button" onclick="addEducationField()"
+                            class="text-sm text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded-full shadow-md transition duration-200">+
+                            Add Degree</button>
+                    </legend>
+                    <div id="education-fields" class="space-y-4">
+                        <!-- Initial fields are added by JS -->
+                    </div>
+                </fieldset>
+
+                <!-- Skills -->
+                <fieldset class="space-y-3 mb-6 p-4 border rounded-lg">
+                    <legend class="text-lg font-semibold text-gray-700">5. Key Skills (Comma Separated)</legend>
+                    <textarea id="skills"
+                        placeholder="e.g., JavaScript, Python, Tailwind CSS, Firestore, Project Management" rows="2"
+                        class="w-full p-2 border rounded-md focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                </fieldset>
+
+                <!-- Action Button -->
+                <button type="button" onclick="downloadPDF(this)" id="download-btn"
+                    class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg shadow-xl transition duration-300 transform hover:scale-[1.01] flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Download Resume as PDF</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Resume Preview (Right/Bottom) -->
+        <div class="lg:col-span-2">
+            <!-- IMPORTANT: This container is targeted by html2pdf -->
+            <div id="resume-preview-container"
+                class="bg-white rounded-xl shadow-2xl min-h-[800px] border border-gray-200">
+                <div id="resume-content" class="max-w-3xl mx-auto">
+                    <!-- Content will be injected here by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variable to hold the photo data URL
+        let photoDataUrl = '';
+        let experienceCounter = 0;
+        let educationCounter = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add initial fields when the page loads
+            addExperienceField(true);
+            addEducationField(true);
+            updateResume(); // Initial render
+        });
+
+        // --- DYNAMIC FIELD MANAGEMENT ---
+
+        function addExperienceField(isInitial = false) {
+            if (!isInitial && experienceCounter >= 5) {
+                console.log("Maximum experience fields reached.");
+                return;
+            }
+
+            const id = experienceCounter++;
+            const container = document.getElementById('experience-fields');
+            const div = document.createElement('div');
+            div.className = 'p-3 bg-gray-50 rounded-lg border border-gray-200 relative';
+            div.id = `exp-entry-${id}`;
+
+            div.innerHTML = `
+                ${!isInitial ? `<button type="button" onclick="removeField('exp-entry-${id}')" class="absolute top-1 right-1 text-red-500 hover:text-red-700 text-sm font-bold p-1 leading-none rounded-full bg-white transition duration-200">&times;</button>` : ''}
+                <input type="text" data-type="job-title" id="job-title-${id}" placeholder="Job Title" class="w-full p-2 border rounded-md mb-2">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" data-type="company" id="company-${id}" placeholder="Company Name" class="w-full p-2 border rounded-md">
+                    <input type="text" data-type="duration" id="duration-${id}" placeholder="Start - End Date / Location" class="w-full p-2 border rounded-md">
+                </div>
+                <textarea data-type="description" id="description-${id}" placeholder="Key responsibilities and achievements (use bullet points or hyphens, separated by newlines)" rows="3" class="w-full p-2 border rounded-md mt-2"></textarea>
+            `;
+            container.appendChild(div);
+            updateResume();
+        }
+
+        function addEducationField(isInitial = false) {
+            if (!isInitial && educationCounter >= 3) {
+                console.log("Maximum education fields reached.");
+                return;
+            }
+
+            const id = educationCounter++;
+            const container = document.getElementById('education-fields');
+            const div = document.createElement('div');
+            div.className = 'p-3 bg-gray-50 rounded-lg border border-gray-200 relative';
+            div.id = `edu-entry-${id}`;
+
+            div.innerHTML = `
+                ${!isInitial ? `<button type="button" onclick="removeField('edu-entry-${id}')" class="absolute top-1 right-1 text-red-500 hover:text-red-700 text-sm font-bold p-1 leading-none rounded-full bg-white transition duration-200">&times;</button>` : ''}
+                <input type="text" data-type="degree" id="degree-${id}" placeholder="Degree/Certification" class="w-full p-2 border rounded-md mb-2">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" data-type="institution" id="institution-${id}" placeholder="Institution Name" class="w-full p-2 border rounded-md">
+                    <input type="text" data-type="edu-duration" id="edu-duration-${id}" placeholder="Year/Duration" class="w-full p-2 border rounded-md">
+                </div>
+            `;
+            container.appendChild(div);
+            updateResume();
+        }
+
+        function removeField(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.remove();
+                updateResume();
+            }
+        }
+
+        // --- PHOTO UPLOAD HANDLING ---
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    photoDataUrl = e.target.result;
+                    updateResume(); // Update resume with new photo
+                };
+                reader.readAsDataURL(file);
+            } else {
+                photoDataUrl = '';
+                updateResume();
+            }
+        }
+
+        // --- REAL-TIME RESUME GENERATION ---
+
+        function updateResume() {
+            const data = {
+                name: document.getElementById('name').value,
+                title: document.getElementById('title').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                linkedin: document.getElementById('linkedin').value,
+                summary: document.getElementById('summary').value,
+                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s.length > 0),
+                experience: getExperienceData(),
+                education: getEducationData(),
+                photo: photoDataUrl // Include photo data
+            };
+
+            const resumeHTML = generateResumeHTML(data);
+            document.getElementById('resume-content').innerHTML = resumeHTML;
+        }
+
+        function getExperienceData() {
+            const entries = [];
+            for (let i = 0; i < experienceCounter; i++) {
+                const title = document.getElementById(`job-title-${i}`)?.value;
+                const company = document.getElementById(`company-${i}`)?.value;
+                const duration = document.getElementById(`duration-${i}`)?.value;
+                const description = document.getElementById(`description-${i}`)?.value;
+
+                if (title || company || duration || description) {
+                    entries.push({ title, company, duration, description });
+                }
+            }
+            return entries;
+        }
+
+        function getEducationData() {
+            const entries = [];
+            for (let i = 0; i < educationCounter; i++) {
+                const degree = document.getElementById(`degree-${i}`)?.value;
+                const institution = document.getElementById(`institution-${i}`)?.value;
+                const duration = document.getElementById(`edu-duration-${i}`)?.value;
+
+                if (degree || institution || duration) {
+                    entries.push({ degree, institution, duration });
+                }
+            }
+            return entries;
+        }
+
+        function generateResumeHTML(data) {
+            let html = '';
+
+            // 1. Header (Name, Contact, and Photo)
+            html += `
+                <div class="flex items-center ${data.photo ? 'justify-start space-x-6' : 'justify-center'} pb-4 border-b-2 border-gray-300 mb-4">
+                    ${data.photo ? `
+                        <img src="${data.photo}" alt="Profile Photo" class="w-24 h-24 rounded-full object-cover border-2 border-indigo-500 shadow-md flex-shrink-0">
+                    ` : ''}
+                    <div class="${data.photo ? 'text-left' : 'text-center'}">
+                        <h1 class="text-4xl font-extrabold text-gray-900">${data.name || 'Your Name'}</h1>
+                        <p class="text-xl font-medium text-indigo-600 mb-2">${data.title || 'Professional Title'}</p>
+                        <div class="flex flex-wrap ${data.photo ? 'justify-start' : 'justify-center'} text-sm text-gray-600 space-x-4">
+                            ${data.email ? `<span>${data.email}</span>` : ''}
+                            ${data.phone ? `<span>|</span> <span>${data.phone}</span>` : ''}
+                            ${data.linkedin ? `<span>|</span> <a href="${data.linkedin}" target="_blank" class="text-indigo-500 hover:underline">LinkedIn Profile</a>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 2. Summary
+            if (data.summary) {
+                html += `
+                    <h3 class="resume-section-title">Summary</h3>
+                    <p class="text-gray-700 text-base leading-relaxed">${data.summary}</p>
+                `;
+            }
+
+            // 3. Experience
+            if (data.experience.length > 0) {
+                html += `
+                    <h3 class="resume-section-title">Professional Experience</h3>
+                    ${data.experience.map(exp => `
+                        <div class="mb-4">
+                            <div class="flex justify-between items-start">
+                                <h4 class="text-lg font-semibold text-gray-800">${exp.title || 'Job Title'}</h4>
+                                <span class="text-sm font-medium text-gray-500">${exp.duration || 'Start - End'}</span>
+                            </div>
+                            <p class="text-md italic text-indigo-600 mb-1">${exp.company || 'Company Name'}</p>
+                            ${generateBulletPoints(exp.description)}
+                        </div>
+                    `).join('')}
+                `;
+            }
+
+            // 4. Education
+            if (data.education.length > 0) {
+                html += `
+                    <h3 class="resume-section-title">Education</h3>
+                    ${data.education.map(edu => `
+                        <div class="mb-3">
+                            <div class="flex justify-between items-start">
+                                <h4 class="text-lg font-semibold text-gray-800">${edu.degree || 'Degree/Certification'}</h4>
+                                <span class="text-sm font-medium text-gray-500">${edu.duration || 'Year/Duration'}</span>
+                            </div>
+                            <p class="text-md italic text-indigo-600">${edu.institution || 'Institution Name'}</p>
+                        </div>
+                    `).join('')}
+                `;
+            }
+
+            // 5. Skills
+            if (data.skills.length > 0 && data.skills[0] !== "") {
+                html += `
+                    <h3 class="resume-section-title">Key Skills</h3>
+                    <div class="flex flex-wrap gap-2">
+                        ${data.skills.map(skill => `
+                            <span class="bg-indigo-100 text-indigo-800 text-sm font-medium px-3 py-1 rounded-full">${skill}</span>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // Empty state placeholder
+            if (html === '') {
+                html = '<div class="text-center text-gray-400 pt-32"><p class="text-2xl font-bold">Start typing your information on the left to see your resume here!</p><p class="mt-2">The resume will update automatically in real-time.</p></div>';
+            }
+
+            return html;
+        }
+
+        // Helper function to convert newline-separated text into an HTML bullet list
+        function generateBulletPoints(description) {
+            if (!description) return '';
+            const lines = description.split('\n').filter(line => line.trim() !== '');
+            if (lines.length === 0) return '';
+
+            return `
+                <ul class="list-disc ml-5 text-gray-700 text-sm space-y-1">
+                    ${lines.map(line => `<li>${line.trim().replace(/^-/, '').trim()}</li>`).join('')}
+                </ul>
+            `;
+        }
+
+        // --- PDF DOWNLOAD FUNCTIONALITY (using html2pdf) ---
+
+        function downloadPDF(button) {
+            const element = document.getElementById('resume-preview-container');
+            const originalButtonText = button.innerHTML;
+
+            // 1. Show loading state
+            button.disabled = true;
+            button.innerHTML = '<span class="animate-pulse">Generating PDF...</span>';
+
+            // 2. Configuration for PDF generation
+            const filename = (document.getElementById('name').value || 'Resume') + '.pdf';
+            const opt = {
+                margin: 0.5,
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                // Use a high scale for better resolution in PDF
+                html2canvas: { scale: 3, logging: false, dpi: 300, letterRendering: true },
+                // Standard letter paper size, portrait orientation
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            // 3. Generate and download
+            // Note: html2pdf handles the download process automatically
+            html2pdf().set(opt).from(element).save().then(() => {
+                // 4. Restore button state
+                button.disabled = false;
+                button.innerHTML = originalButtonText;
+            }).catch(error => {
+                console.error("PDF generation failed:", error);
+                // Custom error message shown instead of alert()
+                button.innerHTML = '❌ Download Failed (See Console)';
+                setTimeout(() => {
+                    button.innerHTML = originalButtonText;
+                    button.disabled = false;
+                }, 3000);
+            });
+        }
+    </script>
+</body>
+
+</html>
